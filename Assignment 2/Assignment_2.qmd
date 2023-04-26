@@ -1,0 +1,150 @@
+---
+title: "Children living in households with income below the national poverty line in 2020"
+format: 
+  html:
+    theme: flatly
+    self-contained: true
+    code-background: true
+editor: visual
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+![This analysis focuses on the ***number of children living in households with income below the national poverty line in 2020***. The data was obtained from the UNICEF database, which contains information on various indicators related to child well-being.We will also look at GDP per capita to see the relationship.](unicef.png)
+
+# Background
+
+![](poverty.jpg)
+
+Children living in households with income below the national poverty line face numerous challenges that can impact their overall well-being and future prospects. These include limited access to:
+
+-   quality education
+-   healthcare
+-   healthy food
+-   safe living conditions
+
+They may also experience ***stress***, ***trauma*** and ***social stigma*** associated with their economic status. Addressing the needs of children from low-income families is essential to promote social equity and build a stronger, healthier and more prosperous society.
+
+```{r}
+library(tidyverse)
+library(countrycode)
+library(maps)
+library(dplyr)
+library(scales)
+library(plotly)
+
+data <- read.csv("unicef_indicator_1.csv")
+data1 <- read.csv("unicef_indicator_2.csv")
+unicef_data <- read.csv("unicef_metadata.csv")
+
+
+# 2. Remove any rows with missing values
+data <- na.omit(data)
+unicef_data <- na.omit(unicef_data)
+
+unicef_data_2020 <- unicef_data %>%
+  filter(year == 2020)
+
+unicef_data_african <- filter(unicef_data_2020, country %in% c("Zimbabwe", "Togo", "Burundi", "Madagascar"))
+
+unicef_data_usa <- unicef_data %>%
+  filter(country == "United States")
+
+unicef_data_zim <- unicef_data %>%
+  filter(country == "Zimbabwe")
+```
+
+# World Map
+
+The first visualization created was a world map showing the percentage of children living in households with income below the national poverty line. The map was created using the ggplot2 and maps packages in R. The map shows countries in different shades of blue, with darker colors indicating higher levels of poverty.
+
+![](map.png)
+
+### Insights
+
+We can see there are no poverty in USA and the European countries. Now we can check their GDP and see the relation that the ***higher*** the GDP, the ***lower*** chances of poverty will occur.
+
+In other words, a high growth of GDP can more often than not help to lessen poverty. GDP growth therefore has a close relationship with the poverty levels in any country. In fact, most economists believe that economic growth benefits nearly all citizens of a country, if not equally, at least in reducing poverty.
+
+# Bar Chart
+
+The second visualization created was a bar chart showing the GDP among the countries. The number of children living in poverty by country is affected by the GDP. The chart was created using the ggplot2 package in R.
+
+```{r fig.height = 20, fig.width = 10}
+# Sort the data frame in descending order of GDP
+unicef_data_2020_sorted <- unicef_data_2020[order(-unicef_data_2020$GDP),]
+
+# Create bar chart with sorted data
+bar_chart <- ggplot(unicef_data_2020_sorted, aes(x = GDP, y = reorder(country, -GDP))) +
+  geom_bar(stat = "identity", fill = "blue", width = 0.5) +
+  labs(title = "GDP per Capita in 2020", x = "GDP", y = "Country") +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text.y = element_text(size = 10))
+
+bar_chart
+
+```
+
+From this bar chart, we can see that most African countries have lower GDP than European Countries. Let's further view the GDP in African countries.
+
+### African Countries
+
+Let's compare the GDP among African countries.
+
+```{r}
+bar_chart <- ggplot(unicef_data_african, aes(x = GDP, y = reorder(country, -GDP))) +
+  geom_bar(stat = "identity", fill = c("lightblue", "blue", "mediumblue", "darkblue"), width = 0.5) +
+  labs(title = "GDP of African Countries in 2020", x = "GDP", y = "Country") +
+  theme(plot.title = element_text(size = 16, face = "bold"),
+        axis.title = element_text(size = 14, face = "bold"),
+        axis.text.y = element_text(size = 10))
+
+bar_chart
+```
+And the poverty percentage of the African countries.
+
+![](bar.png)
+
+
+# Scatter Plot
+
+The third visualization created was a scatter plot with a regression line showing the relationship between GDP and GNI per capita. The chart was created using the ggplot2 package in R. The chart shows each country's GDP and GNI per capita in 2020. The regression line helps to visualize the trend between these two variables.
+
+```{r fig.width = 10}
+# Create scatter plot with regression line
+scatterplot <- ggplot(unicef_data_2020, aes(x = GDP, y = GNI)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  scale_x_continuous(labels = comma) +
+  scale_y_continuous(labels = comma) +
+  labs(title = "GDP_GNI per capita Scatter Plot with Regression Line", 
+       x = "GDP per capita (current US$)", 
+       y = "GNI per captia (current US$)") 
+
+scatterplot
+```
+
+# Time-series Chart
+
+Let's compare the poverty line between the most popular country ***USA***, and the highest poverty country, ***Zimbabwe***.
+
+According to the World Bank, the gross domestic product (GDP) of the United States in 2020 was approximately \$20.9 trillion.
+
+```{r}
+# Create time chart
+ggplot(unicef_data_usa, aes(x = year, y = GDP)) +
+  geom_line() +
+  labs(title = "GDP of USA", x = "Year", y = "GDP (US$)")
+```
+
+According to the data, Zimbabwe has **75.97 %** of children living in households with income below the national poverty line in 2020.
+
+```{r}
+# Create time chart
+ggplot(unicef_data_zim, aes(x = year, y = GDP)) +
+  geom_line() +
+  labs(title = "GDP of Zimbabwe", x = "Year", y = "GDP (US$)")
+```
